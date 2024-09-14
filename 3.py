@@ -1,8 +1,11 @@
-for i in range(5):
-    from random import randint as r, choice as c 
-    numbers = [1, 2, 3, 4, 5]
-    print(c(numbers), end = "\t")
+def factorial(number):
+    if number < 0 :
+       return 'it is not correct'
+    
+    result = 1
+    for i in range (1, number + 1):
+        result *= i 
+    return result
 
-
-    names = ["ali", "reza", "mohammad", "mehrad", "mehdi" ]
-    print(c(names))
+num = int(input())
+print(factorial(num))
