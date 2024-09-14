@@ -11,4 +11,4 @@ def mahdi(H, K):
 H = int(input())
 K = int(input())
 
-mahdi(H, K
+mahdi(H, K)
