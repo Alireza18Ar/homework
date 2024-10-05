@@ -30,16 +30,16 @@ def add_product():
 
 # جستجو کردن محصول
 def search_product():
-    name = entry_name.get()
+    Product_name = entry_name.get()
 
     conn = sqlite3.connect('shop.db')
-    cursor = conn.execute('SELECT * FROM products WHERE name = name',(name))
+    cursor = conn.execute("SELECT * FROM products WHERE name=?",(Product_name,))
     product = cursor.fetchall()
     conn.close()
 
     if product:
         entry_price.delete(0, tk.END)
-        entry_price.insert(0, product[2])
+        entry_price.insert(0, product[1])
     else:
         messagebox.showwarning("Warning", "Product not found")
 
@@ -48,7 +48,7 @@ def delete_product():
     name = entry_name.get()
     
     conn = sqlite3.connect('shop.db')
-    conn.execute('DELETE FROM products WHERE name=?', (name))
+    conn.execute('DELETE FROM products WHERE name=?', (name,))
     conn.commit()
     conn.close()
     messagebox.showinfo("Success", "Product delete successfully")
