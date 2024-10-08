@@ -39,7 +39,7 @@ def search_product():
 
     if product:
         entry_price.delete(0, tk.END)
-        entry_price.insert(0, product[1])
+        entry_price.insert(0, product[0])
     else:
         messagebox.showwarning("Warning", "Product not found")
 
