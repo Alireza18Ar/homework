@@ -1,114 +1,139 @@
-import sqlite3 
+import sqlite3
 import tkinter as tk
 from tkinter import messagebox
 
-#ایجاد جدول پایگاه داده
-conn = sqlite3.connect('shop.db')
 
-# ایجاد جدول محصولات 
-conn.execute(''' CREATE TABLE IF NOT EXISTS products (
-             id INTEGER PRIMARY KEY,
-             name TEXT NOT NULL,
-             price REAL NOT NULL)''')
-conn.close()
+# connect to database
+conn = sqlite3.connect('atm.db')
 
 
-# اضافه کردن محصول
-def add_product():
-    name = entry_name.get()
-    price = entry_price.get()
+# create a table for users
+conn.execute(''' CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY, 
+          username TEXT NOT NULL ,
+          password TEXT NOT NULL, 
+          balance REAL NOT NULL DEFAULT 0
+          )'''
+          )
 
-    if name and price:
-        conn = sqlite3.connect('shop.db')
-        conn.execute('INSERT INTO products (name, price) VALUES (?, ?)', (name, float(price)))
-        conn.commit()
-        conn.close()
-        messagebox.showinfo("Success", "Product added successfully")
-        clear_entries()
-    else:
-        messagebox.showwarning("Warning", "Please enter both name and price")
+conn.commit()
 
-# جستجو کردن محصول
-def search_product():
-    Product_name = entry_name.get()
+# functionals about atm work
+def chek_balance(username):
+    """برای بررسی کردن موجودی حساب بانکی"""
 
-    conn = sqlite3.connect('shop.db')
-    cursor = conn.execute("SELECT * FROM products WHERE name=?",(Product_name,))
-    product = cursor.fetchall()
-    conn.close()
+    conn.execute("SELECT balance FROM users WHERE username=?", (username,))
+    return conn.fetchone()[0]
 
-    if product:
-        entry_price.delete(0, tk.END)
-        entry_price.insert(0, product[0])
-    else:
-        messagebox.showwarning("Warning", "Product not found")
+def deposit(username, amount):
+    """برای واریز پول به حساب """
 
-# حذف محصول
-def delete_product():
-    name = entry_name.get()
-    
-    conn = sqlite3.connect('shop.db')
-    conn.execute('DELETE FROM products WHERE name=?', (name,))
+    conn.execute("UPDATE users  SET balance = balance + ? WHERE username=?", (amount, username))
     conn.commit()
-    conn.close()
-    messagebox.showinfo("Success", "Product delete successfully")
-    clear_entries()
-# ویرایش محصولات
-def edit_product():
-    name = entry_name.get()
-    price = entry_price.get()
 
-    if name and price:
-        conn = sqlite3.connect('shop.db')
-        conn.execute('UPDATE products SET price=? WHERE name= ?', ((float(price)), name)) 
-        conn.commit()
-        conn.close()
-        messagebox.showinfo("Success", "Product updated successfully")
-        clear_entries()
+def withdraw(username, amount):
+    """برای برداشت از حساب"""
+
+    conn.execute("SELECT balance FROM users WHERE username=?", (username))
+    balance = conn.fetchone()[0]
+    if amount > balance:
+        return False
     else:
-        messagebox.showwarning("Warning", "Please enter both name and price.")
+        conn.execute("UPDATE users SET balance = balance - ? WHERE username=?", (amount, username))
+        conn.commit()
+        return True
+    
+def register_user(username, password):
+    """برای ایجاد حساب بانکی"""
 
-def clear_entries():
-    entry_name.delete(0, tk.END)
-    entry_price.delete(0, tk.END)
+    try:
+        conn.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+        conn.commit()
+        messagebox.showinfo("New User", "Registration was successfully!")
+    except sqlite3.IntegrityError:
+        messagebox.showerror("Username", "It is repetitive")
 
-
-# بستن برنامه 
-def close_app():
-    root.destroy()
-
-
-# ساخت گرافیکی برنامه
-root = tk.Tk()
-root.title("سوپر مارکت مسعود")
-root.geometry("300x200")
-
-label1 = tk.Label(root, text="Product price")
-label1.grid(row= 1, column= 0)
-
-label2 = tk.Label(root, text= "Product name")
-label2.grid(row= 0 , column= 0)
-
-entry_name =tk.Entry(root)
-entry_price = tk.Entry(root)
-
-entry_name.grid(row= 0, column= 1)
-entry_price.grid(row= 1, column= 1)
-
-add_btn = tk.Button(root, text= "Add product", command=add_product)
-add_btn.grid(row= 2, column= 0)
-
-search_btn = tk.Button(root, text= "Search product", command= search_product)
-search_btn.grid(row= 2, column= 1)
-
-delete_btn = tk.Button(root, text= "Delete product", command= delete_product)
-delete_btn.grid(row= 3, column= 0)
-
-edit_btn = tk.Button(root, text= "Edit product", command= edit_product)
-edit_btn.grid(row= 3, column= 1)
-
-close_btn = tk.Button(root, text="Close", command= close_app)
-close_btn.grid(row= 4, columnspan= 4)
+# create atm with tkinter 
+def Atm_interface():
+    """اینجا قیافه کار رو در میاریم"""
+    def login():
+        username = entry_username.get()
+        password = entry_password.get()
+        conn.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+        user = conn.fetchone()
+        if user:
+            main_menu(user[1])
+        else:
+            messagebox.showerror("Name", "Username or password is not correct!")
+    
+    def register():
+        username = entry_username.get()
+        password = entry_password.get()
+        register_user(username, password)
 
 
-root.mainloop()
+    def atm():
+        global entry_username, entry_password
+        window = tk.Tk()
+        window.title("ATM APP")
+        window.geometry("300x300")
+        window.bg("dark blue")
+
+        label1 = tk.Label(window, text="Username:", font=("Hack", 20, "bold"), bg="light green")
+        label1.pack()
+        entry_username = tk.Entry(window)
+        entry_username.pack()
+
+        label2 = tk.Label(window, text= "Password")
+        label2.pack()
+        entry_password = tk.Event(window)
+        entry_password.pack()
+
+        btn1 = tk.Button(window, text= "Login", command= login)
+        btn1.pack()
+
+        btn2 = tk.Button(window, text= "Register", command= register)
+        btn2.pack()
+
+        window.mainloop()
+
+def main_menu(username):
+    root = tk.Tk()
+    root.title("Main menu")
+
+    def view_balance():
+        balance = chek_balance(username)
+        messagebox.showinfo(f"Your balance :", {balance}, "IRR")
+
+    def diposit_mony():
+        amount =float(entry_amount.get())
+        deposit(username, amount)
+        messagebox.showinfo({amount}, f"IRR Credited to your account.")
+    
+    def withdrw_money():
+        amount =float(entry_amount.get())
+        if withdraw(username, amount):
+            messagebox.showinfo({amount}, f"IRR DEdcuted from your account.")
+        else:
+            messagebox.showerror("Warning", "Your balance is not enough!")
+
+    def atM():
+        global entry_amount
+        label3 = tk.Label(root, text= "Amount")
+        label3.pack()
+        entry_amount = tk.Entry(root)
+        entry_amount.pack()
+
+        btn3 = tk.Button(root, text= "View balance", command= view_balance)
+        btn3.pack()
+
+        btn4 = tk.Button(root, text= "Deposit money", command= diposit_mony)
+        btn4.pack()
+
+        btn5 = tk.Button(root, text= "Withdraw money", command= withdrw_money)
+        btn5.pack()
+
+        root.mainloop()
+
+if __name__ == "__main__":
+    Atm_interface()
